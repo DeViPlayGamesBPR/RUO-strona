@@ -4,12 +4,14 @@
     <meta charset="UTF-8">
     <title>RUO - Baza słuchaczy</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <script src="https://apis.google.com/js/api.js"></script>
+    <!-- Ładowanie bibliotek Google z odpowiednimi onload -->
+    <script src="https://apis.google.com/js/api.js?onload=gapiLoaded"></script>
+    <script src="https://accounts.google.com/gsi/client" async defer onload="gisLoaded()"></script>
     <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body>
     <div id="login-section">
-        <h2>RUO - Baza słazuchaczy</h2>
+        <h2>RUO - Baza słuchaczy</h2>
         <button onclick="handleAuthClick()">Zaloguj się przez Google</button>
         <button onclick="handleSignoutClick()">Wyloguj</button>
         <p id="auth-status"></p>
