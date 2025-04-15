@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <title>RUO - Baza słuchaczy</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="https://apis.google.com/js/api.js"></script>
+    <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+    <div id="login-section">
+        <h2>RUO - Baza słuchaczy</h2>
+        <button onclick="handleAuthClick()">Zaloguj się przez Google</button>
+        <button onclick="handleSignoutClick()">Wyloguj</button>
+        <p id="auth-status"></p>
+    </div>
+
+    <div id="picker-section" style="display:none;">
+        <p>Wybierz plik CSV z Dysku Google:</p>
+        <button onclick="createPicker()">📂 Wybierz plik</button>
+    </div>
+
+    <div id="app-section" style="display:none;">
+        <nav>
+            <button onclick="showTab('dashboard')">🏠 Główna</button>
+            <button onclick="showTab('sluchacze')">📋 Lista słuchaczy</button>
+        </nav>
+
+        <section id="dashboard" class="tab">
+            <h3>Panel główny</h3>
+            <p>Liczba słuchaczy: <span id="count-listeners">...</span></p>
+        </section>
+
+        <section id="sluchacze" class="tab" style="display:none;">
+            <h3>Lista słuchaczy</h3>
+            <table id="tableListeners">
+                <thead><tr><th>Indeks</th><th>Imię</th><th>Nazwisko</th><th>Telefon</th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </section>
+    </div>
+
+    <script src="assets/js/script.js"></script>
+</body>
+</html>
