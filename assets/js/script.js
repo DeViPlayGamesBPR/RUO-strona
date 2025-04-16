@@ -1,154 +1,111 @@
+let correctPassword = "RUORadzymin25";
+let apiUrl = "https://api.github.com/repos/DeViPlayGamesBPR/RUO-strona/contents/assets/data/dane.xlsx";
+let token = "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";
+let tableData = [];
 
-let CLIENT_ID = '438515316731-2g5u0c77so5r3dm2rvv74etn6ss9naad.apps.googleusercontent.com';
-let API_KEY = 'AIzaSyDFx3b-J1JBXONjIBP5j81oGvs65wrhBXc';
-let DISCOVERY_DOCS = ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"];
-let SCOPES = 'https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/drive.file';
-
-let tokenClient;
-let gapiInited = false;
-let gisInited = false;
-let fileId = null;
-let originalData = [];
-
-function initAll() {
-  gapi.load('client:picker', () => {
-    gapiLoaded();
-    gisLoaded();
-  });
+function showLogin() {
+  document.getElementById("login").style.display = "block";
+  document.getElementById("app").style.display = "none";
 }
 
-function gapiLoaded() {
-  gapi.client.init({
-    apiKey: API_KEY,
-    discoveryDocs: DISCOVERY_DOCS,
-  }).then(() => {
-    gapiInited = true;
-    maybeEnableButtons();
-  });
+function showApp() {
+  document.getElementById("login").style.display = "none";
+  document.getElementById("app").style.display = "block";
+  fetchXlsx();
 }
 
-function gisLoaded() {
-  tokenClient = google.accounts.oauth2.initTokenClient({
-    client_id: CLIENT_ID,
-    scope: SCOPES,
-    callback: '',
-  });
-  gisInited = true;
-  maybeEnableButtons();
-}
-
-function maybeEnableButtons() {
-  if (gapiInited && gisInited) {
-    document.getElementById("auth-status").textContent = "Możesz się zalogować";
+function checkPassword() {
+  const input = document.getElementById("password").value;
+  if (input === correctPassword) {
+    showApp();
+  } else {
+    alert("Nieprawidłowe hasło");
   }
 }
 
-function handleAuthClick() {
-  if (!tokenClient) {
-    alert("Jeszcze się nie załadował klient Google. Spróbuj za chwilę.");
-    return;
-  }
-
-  tokenClient.callback = async (resp) => {
-    if (resp.error !== undefined) {
-      throw resp;
-    }
-    document.getElementById("login-section").style.display = "none";
-    document.getElementById("picker-section").style.display = "block";
-  };
-
-  tokenClient.requestAccessToken({ prompt: 'consent' });
+async function fetchXlsx() {
+  const response = await fetch("assets/data/dane.xlsx");
+  const arrayBuffer = await response.arrayBuffer();
+  const workbook = XLSX.read(arrayBuffer, { type: "array" });
+  const sheetName = workbook.SheetNames[0];
+  const sheet = workbook.Sheets[sheetName];
+  tableData = XLSX.utils.sheet_to_json(sheet, { header: 1 }).slice(1);
+  renderTable();
 }
 
-function handleSignoutClick() {
-  google.accounts.oauth2.revoke(tokenClient.access_token);
-  location.reload();
-}
-
-function createPicker() {
-  const view = new google.picker.DocsView()
-    .setIncludeFolders(true)
-    .setMimeTypes("text/csv")
-    .setSelectFolderEnabled(false);
-
-  const picker = new google.picker.PickerBuilder()
-    .enableFeature(google.picker.Feature.NAV_HIDDEN)
-    .enableFeature(google.picker.Feature.SUPPORT_DRIVES)
-    .setOAuthToken(gapi.auth.getToken().access_token)
-    .addView(view)
-    .setCallback(pickerCallback)
-    .build();
-  picker.setVisible(true);
-}
-
-function pickerCallback(data) {
-  if (data.action === google.picker.Action.PICKED) {
-    fileId = data.docs[0].id;
-    fetchCsvFromDrive(fileId);
-  }
-}
-
-function fetchCsvFromDrive(fileId) {
-  gapi.client.drive.files.get({
-    fileId: fileId,
-    alt: 'media'
-  }).then(response => {
-    parseCsv(response.body);
-  }).catch(err => {
-    console.error("Błąd pobierania pliku:", err);
-    alert("Nie udało się pobrać pliku. Upewnij się, że masz dostęp i spróbuj ponownie.");
-  });
-}
-
-function parseCsv(data) {
-  const rows = data.trim().split("\n").map(r => r.split(","));
-  originalData = rows;
-  const tbody = document.querySelector("#tableListeners tbody");
+function renderTable() {
+  const tbody = document.getElementById("tableListeners");
   tbody.innerHTML = "";
-  rows.forEach(r => {
+  tableData.forEach((row, index) => {
     const tr = document.createElement("tr");
-    tr.innerHTML = `<td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td>`;
+    tr.innerHTML = `
+      <td contenteditable="true">${row[0] || ""}</td>
+      <td contenteditable="true">${row[1] || ""}</td>
+      <td contenteditable="true">${row[2] || ""}</td>
+      <td contenteditable="true">${row[3] || ""}</td>
+      <td><button onclick="removeRow(${index})">🗑</button></td>
+    `;
     tbody.appendChild(tr);
   });
-  document.getElementById("app-section").style.display = "block";
-  document.getElementById("picker-section").style.display = "none";
-  document.getElementById("count-listeners").textContent = rows.length;
 }
 
-function exportTableToCsv() {
-  const rows = Array.from(document.querySelectorAll("#tableListeners tbody tr"));
-  return rows.map(row => {
-    const cols = Array.from(row.querySelectorAll("td")).map(td => td.textContent);
-    return cols.join(",");
-  }).join("\n");
+function addRow() {
+  tableData.push(["", "", "", ""]);
+  renderTable();
 }
 
-window.onbeforeunload = function () {
-  const confirmLeave = confirm("Czy chcesz zapisać zmiany?");
-  if (confirmLeave && fileId) {
-    const csvContent = exportTableToCsv();
-    const blob = new Blob([csvContent], { type: 'text/csv' });
+function removeRow(index) {
+  tableData.splice(index, 1);
+  renderTable();
+}
 
-    const reader = new FileReader();
-    reader.onload = function () {
-      const token = gapi.auth.getToken().access_token;
-      fetch(`https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`, {
-        method: 'PATCH',
-        headers: {
-          'Authorization': 'Bearer ' + token,
-          'Content-Type': 'text/csv'
-        },
-        body: reader.result
-      }).then(response => {
-        if (!response.ok) {
-          console.error("Błąd zapisu:", response.statusText);
-        }
-      });
-    };
-    reader.readAsText(blob);
+async function saveTable() {
+  const rows = Array.from(document.querySelectorAll("#tableListeners tr")).map(row =>
+    Array.from(row.querySelectorAll("td")).slice(0, 4).map(td => td.textContent.trim())
+  );
+  const header = [["Indeks", "Imię", "Nazwisko", "Telefon"]];
+  const ws = XLSX.utils.aoa_to_sheet(header.concat(rows));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Słuchacze");
+  const wbout = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+
+  const base64 = arrayBufferToBase64(wbout);
+
+  const shaResp = await fetch(apiUrl, {
+    headers: {
+      Authorization: "token " + token,
+      Accept: "application/vnd.github.v3+json"
+    }
+  });
+  const shaData = await shaResp.json();
+  const sha = shaData.sha;
+
+  const response = await fetch(apiUrl, {
+    method: "PUT",
+    headers: {
+      Authorization: "token " + token,
+      Accept: "application/vnd.github.v3+json"
+    },
+    body: JSON.stringify({
+      message: "Aktualizacja danych słuchaczy",
+      content: base64,
+      sha: sha
+    })
+  });
+
+  if (response.ok) {
+    alert("Plik został zapisany w repozytorium!");
+  } else {
+    alert("Błąd zapisu: " + response.statusText);
   }
-};
+}
 
-window.onload = () => {
-  initAll();
-};
+function arrayBufferToBase64(buffer) {
+  let binary = '';
+  const bytes = new Uint8Array(buffer);
+  const len = bytes.byteLength;
+  for (let i = 0; i < len; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
+}
