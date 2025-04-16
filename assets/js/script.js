@@ -76,7 +76,18 @@ function renderSluchacze() {
   });
 }
 
+
 function editRow(i) {
+  const row = tableData[i];
+  const indeks = prompt("Indeks:", row[0]);
+  const imie = prompt("Imię:", row[1]);
+  const nazw = prompt("Nazwisko:", row[2]);
+  const tel = prompt("Telefon:", row[3]);
+  if (indeks && imie && nazw && tel) {
+    tableData[i] = [indeks, imie, nazw, tel];
+    renderSluchacze();
+  }
+
   const row = tableData[i];
   const imie = prompt("Imię:", row[1]);
   const nazw = prompt("Nazwisko:", row[2]);
