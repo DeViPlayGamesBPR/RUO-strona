@@ -1,8 +1,6 @@
 
 let tableData = [];
 let editIndex = -1;
-let githubToken = "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";
-let githubApiUrl = "https://api.github.com/repos/DeViPlayGamesBPR/RUO-strona/contents/assets/data/dane.xlsx";
 
 function showTab(tabId) {
   document.querySelectorAll(".tab").forEach(tab => tab.style.display = "none");
@@ -70,7 +68,7 @@ function zapiszEdycje() {
   zamknijModal();
   renderTable();
   updateStats();
-  saveToGitHub("Edytowano słuchacza: " + imie + " " + nazw);
+  saveToXLSX("Edytowano słuchacza: " + imie + " " + nazw);
 }
 
 function deleteRow(index) {
@@ -79,7 +77,7 @@ function deleteRow(index) {
     tableData.splice(index, 1);
     renderTable();
     updateStats();
-    saveToGitHub("Usunięto słuchacza: " + nazw);
+    saveToXLSX("Usunięto słuchacza: " + nazw);
   }
 }
 
@@ -93,7 +91,7 @@ function dodajSluchacza() {
     renderTable();
     document.getElementById("formDodaj").reset();
     updateStats();
-    saveToGitHub("Dodano słuchacza: " + imie + " " + nazwisko);
+    saveToXLSX("Dodano słuchacza: " + imie + " " + nazwisko);
   }
 }
 
@@ -104,52 +102,27 @@ function searchTable() {
   });
 }
 
-async function saveToGitHub(message) {
+function saveToXLSX(logMessage) {
   const header = [["Indeks", "Imię", "Nazwisko", "Telefon"]];
   const data = header.concat(tableData);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(data), "Słuchacze");
 
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet(data);
+  XLSX.utils.book_append_sheet(wb, ws, "Słuchacze");
+
+  // Arkusz Logi
   const now = new Date().toLocaleString();
-  const logSheet = XLSX.utils.aoa_to_sheet([["Czas", "Typ operacji", "Opis"], [now, "Akcja", message]]);
+  const logSheet = XLSX.utils.aoa_to_sheet([["Czas", "Typ operacji", "Opis"], [now, "Akcja", logMessage]]);
   XLSX.utils.book_append_sheet(wb, logSheet, "Logi");
 
   const wbout = XLSX.write(wb, { bookType: "xlsx", type: "array" });
-  const base64 = await toBase64(wbout);
+  const blob = new Blob([wbout], { type: "application/octet-stream" });
 
-  const sha = await fetch(githubApiUrl, {
-    headers: {
-      Authorization: "token " + githubToken,
-      Accept: "application/vnd.github.v3+json"
-    }
-  }).then(r => r.json()).then(d => d.sha);
-
-  const payload = {
-    message: "[AutoSync] " + message,
-    content: base64,
-    sha: sha
-  };
-
-  await fetch(githubApiUrl, {
-    method: "PUT",
-    headers: {
-      Authorization: "token " + githubToken,
-      Accept: "application/vnd.github.v3+json"
-    },
-    body: JSON.stringify(payload)
-  });
-}
-
-function toBase64(buffer) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const b64 = reader.result.split(",")[1];
-      resolve(b64);
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(new Blob([buffer]));
-  });
+  // automatyczne pobieranie
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "dane.xlsx";
+  a.click();
 }
 
 window.onload = () => {
