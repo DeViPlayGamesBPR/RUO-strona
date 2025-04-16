@@ -2,11 +2,13 @@
 let CLIENT_ID = '438515316731-2g5u0c77so5r3dm2rvv74etn6ss9naad.apps.googleusercontent.com';
 let API_KEY = 'AIzaSyDFx3b-J1JBXONjIBP5j81oGvs65wrhBXc';
 let DISCOVERY_DOCS = ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"];
-let SCOPES = 'https://www.googleapis.com/auth/drive.file';
+let SCOPES = 'https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/drive.file';
+
 let tokenClient;
 let gapiInited = false;
 let gisInited = false;
 let fileId = null;
+let originalData = [];
 
 function initAll() {
   gapi.load('client:picker', () => {
@@ -15,16 +17,7 @@ function initAll() {
   });
 }
 
-function showTab(tab) {
-  document.querySelectorAll(".tab").forEach(t => t.style.display = "none");
-  document.getElementById(tab).style.display = "block";
-}
-
 function gapiLoaded() {
-  gapi.load('client:picker', initializeGapiClient);
-}
-
-function initializeGapiClient() {
   gapi.client.init({
     apiKey: API_KEY,
     discoveryDocs: DISCOVERY_DOCS,
@@ -55,6 +48,7 @@ function handleAuthClick() {
     alert("Jeszcze się nie załadował klient Google. Spróbuj za chwilę.");
     return;
   }
+
   tokenClient.callback = async (resp) => {
     if (resp.error !== undefined) {
       throw resp;
@@ -62,6 +56,7 @@ function handleAuthClick() {
     document.getElementById("login-section").style.display = "none";
     document.getElementById("picker-section").style.display = "block";
   };
+
   tokenClient.requestAccessToken({ prompt: 'consent' });
 }
 
@@ -71,10 +66,14 @@ function handleSignoutClick() {
 }
 
 function createPicker() {
-  const view = new google.picker.View(google.picker.ViewId.DOCS);
-  view.setMimeTypes("text/csv");
+  const view = new google.picker.DocsView()
+    .setIncludeFolders(true)
+    .setMimeTypes("text/csv")
+    .setSelectFolderEnabled(false);
+
   const picker = new google.picker.PickerBuilder()
     .enableFeature(google.picker.Feature.NAV_HIDDEN)
+    .enableFeature(google.picker.Feature.SUPPORT_DRIVES)
     .setOAuthToken(gapi.auth.getToken().access_token)
     .addView(view)
     .setCallback(pickerCallback)
@@ -95,11 +94,15 @@ function fetchCsvFromDrive(fileId) {
     alt: 'media'
   }).then(response => {
     parseCsv(response.body);
+  }).catch(err => {
+    console.error("Błąd pobierania pliku:", err);
+    alert("Nie udało się pobrać pliku. Upewnij się, że masz dostęp i spróbuj ponownie.");
   });
 }
 
 function parseCsv(data) {
   const rows = data.trim().split("\n").map(r => r.split(","));
+  originalData = rows;
   const tbody = document.querySelector("#tableListeners tbody");
   tbody.innerHTML = "";
   rows.forEach(r => {
@@ -112,11 +115,40 @@ function parseCsv(data) {
   document.getElementById("count-listeners").textContent = rows.length;
 }
 
-window.onbeforeunload = function() {
-  return "Czy chcesz zapisać zmiany?";
+function exportTableToCsv() {
+  const rows = Array.from(document.querySelectorAll("#tableListeners tbody tr"));
+  return rows.map(row => {
+    const cols = Array.from(row.querySelectorAll("td")).map(td => td.textContent);
+    return cols.join(",");
+  }).join("\n");
+}
+
+window.onbeforeunload = function () {
+  const confirmLeave = confirm("Czy chcesz zapisać zmiany?");
+  if (confirmLeave && fileId) {
+    const csvContent = exportTableToCsv();
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+
+    const reader = new FileReader();
+    reader.onload = function () {
+      const token = gapi.auth.getToken().access_token;
+      fetch(`https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': 'Bearer ' + token,
+          'Content-Type': 'text/csv'
+        },
+        body: reader.result
+      }).then(response => {
+        if (!response.ok) {
+          console.error("Błąd zapisu:", response.statusText);
+        }
+      });
+    };
+    reader.readAsText(blob);
+  }
 };
 
 window.onload = () => {
-  gapiLoaded();
-  gisLoaded();
+  initAll();
 };
