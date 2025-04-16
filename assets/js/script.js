@@ -8,6 +8,13 @@ let gapiInited = false;
 let gisInited = false;
 let fileId = null;
 
+function initAll() {
+  gapi.load('client:picker', () => {
+    gapiLoaded();
+    gisLoaded();
+  });
+}
+
 function showTab(tab) {
   document.querySelectorAll(".tab").forEach(t => t.style.display = "none");
   document.getElementById(tab).style.display = "block";
