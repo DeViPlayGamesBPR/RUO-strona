@@ -1,0 +1,62 @@
+{
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <title>RUO – Baza słuchaczy</title>
+  <link rel="stylesheet" href="assets/css/style.css">
+  <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+  <h1>RUO – System zarządzania</h1>
+
+  <nav>
+    <button onclick="showTab('home')">🏠 Strona główna</button>
+    <button onclick="showTab('lista')">📋 Lista słuchaczy</button>
+    <button onclick="showTab('dodaj')">➕ Dodaj słuchacza</button>
+    <button onclick="showTab('wycieczki')">🚌 Wycieczki</button>
+    <button onclick="showTab('spotkania')">📅 Spotkania</button>
+  </nav>
+
+  <section id="home" class="tab">
+    <h2>📊 Statystyki</h2>
+    <p>Liczba słuchaczy: <strong id="liczba"></strong></p>
+    <p>Ostatni numer indeksu: <strong id="ostatni"></strong></p>
+  </section>
+
+  <section id="lista" class="tab">
+    <h2>📋 Lista słuchaczy</h2>
+    <input type="text" id="search" onkeyup="searchTable()" placeholder="Szukaj...">
+    <table border="1">
+      <thead>
+        <tr><th>Indeks</th><th>Imię</th><th>Nazwisko</th><th>Telefon</th><th>Opcje</th></tr>
+      </thead>
+      <tbody id="tabelaSluchaczy"></tbody>
+    </table>
+  </section>
+
+  <section id="dodaj" class="tab">
+    <h2>➕ Dodaj słuchacza</h2>
+    <form onsubmit="dodajSluchacza(); return false;" id="formDodaj">
+      <label>Indeks: <input id="indeks" required></label><br>
+      <label>Imię: <input id="imie" required></label><br>
+      <label>Nazwisko: <input id="nazwisko" required></label><br>
+      <label>Telefon: <input id="telefon" required></label><br>
+      <button type="submit">Dodaj</button>
+    </form>
+  </section>
+
+  <section id="wycieczki" class="tab">
+    <h2>🚌 Wycieczki</h2>
+    <p>Funkcja w trakcie rozbudowy</p>
+  </section>
+
+  <section id="spotkania" class="tab">
+    <h2>📅 Spotkania</h2>
+    <p>Funkcja w trakcie rozbudowy</p>
+  </section>
+
+  <script src="assets/js/script.js"></script>
+</body>
+</html>
+}
